@@ -1,0 +1,501 @@
+{
+  "name": "Email-Support-Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -512,
+        3312
+      ],
+      "id": "cd863920-52b6-4a94-a20c-07a68db477ec",
+      "name": "Fallback Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "iv1r5q9QqvTklRpc",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -656,
+        3312
+      ],
+      "id": "a2d2ad16-871c-4832-bcd1-50acd944f9ec",
+      "name": "OpenAI Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "iv1r5q9QqvTklRpc",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=user message:  {{ $('Read Unread messages').item.json.html }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a professional AI assistant that reads customer emails and writes empathetic and helpful replies.  Your task is to: 1. Understand the sender's message and concerns. 2. Generate a reply email that is:    - Professional – Use clear, respectful, and formal language.    - Empathetic – Acknowledge the sender’s feelings or concerns.    - Helpful – Offer assistance, next steps, or reassurance. 3. Maintain a courteous tone throughout the message.  Do not include excessive formality or robotic phrasing. Sound human and caring."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        528,
+        2848
+      ],
+      "id": "5edca074-a474-4918-8024-9e325458a006",
+      "name": "Write Reply Message",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n   \"replyMessage\": {\n      \"type\": \"string\",\n      \"description\": \"A professionally written and empathetic reply to the user's email.\"\n    }\n  },\n  \"required\": [\"replyMessage\"]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        3024
+      ],
+      "id": "29a649dc-619c-4efa-a194-a249cced1423",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Read Unread messages').item.json.id }}",
+        "emailType": "text",
+        "message": "={{ $json.output.replyMessage }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        992,
+        2848
+      ],
+      "id": "578d15c9-d34e-4e15-b9fe-c26e70315fe8",
+      "name": "Reply to a message",
+      "webhookId": "a0fa0d29-0bd8-44e2-9af4-6ba2f7217a46",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IWAlvl8WYuPce31f",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Input:\n- Customer Email: {{ $json.output.userEmail }}\n- Customer Message : {{ $json.output.summary }}\n- Priority: {{ $json.output.priority }}  (Valid values: High, Medium, Low)\n- Ticket Type: {{ $json.output.supportType }} \n\nInstructions:\n1. Create a Jira ticket with the provided details.\n2. Set the priority accordingly.\n3. Determine the appropriate support agent using tool.\n4. Assign the ticket to the next available agent.\n5. Write a message to inform support agent on slack. Include jira ticket details and link",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an AI assistant integrated with Jira via MCP (Managed Connect Plugin). Based on the following input, create a Jira ticket with appropriate fields, and assign it to a support agent.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        528,
+        3248
+      ],
+      "id": "b332e84b-fd0a-4904-979c-9eaec6c3c540",
+      "name": "AI Agent",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "endpointUrl": "https://abhishekatpt-my-mcp-space-612353.hf.space/gradio_api/mcp/",
+        "serverTransport": "httpStreamable"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.1,
+      "position": [
+        656,
+        3504
+      ],
+      "id": "a266af5a-8096-44b0-b2ec-45163b482347",
+      "name": "Jira MCP"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "Label_8285759022012730295"
+          ]
+        },
+        "options": {}
+      },
+      "id": "f74c71bc-2f8a-40ea-ba67-931dcb008727",
+      "name": "Read Unread messages",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        -848,
+        3056
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IWAlvl8WYuPce31f",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U098JK3C86T",
+          "mode": "list",
+          "cachedResultName": "yk.abhee"
+        },
+        "text": "={{ $json.output.slackMessage }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1056,
+        3248
+      ],
+      "id": "b7a3bbbf-0c63-4320-9f17-25ef9dc19832",
+      "name": "Send a message",
+      "webhookId": "1496fdb9-1a35-4acb-a0ef-b1272bdcebfa",
+      "credentials": {
+        "slackApi": {
+          "id": "Z4aRNKMgZHOCuTQE",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "53849246-ad32-4845-9976-9f9688f5a6f2",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.output.needsReply }}",
+              "rightValue": "true"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f1109688-db8d-4970-a14c-194b7779eb6f",
+      "name": "Check",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -48,
+        3056
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        3504
+      ],
+      "id": "fc98fbf6-2f40-429d-a1be-87d8df9d6460",
+      "name": "AI Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "iv1r5q9QqvTklRpc",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "prompt": "=Subject: {{ $json.subject }}\nCustomer Email: {{ $json.from.value[0].address }}\nMessage: {{ $json.html }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an AI agent that processes incoming email messages.\n\nPerform the following tasks:\n\n1. Classify the email type as one of:\n   - \"Marketing\" – Promotional content, newsletters, offers, advertisements.\n   - \"Support\" – Emails that request help, report an issue, or seek assistance.\n   - \"Other\" – Any email that does not fall into the above categories.\n\n2. Generate a brief summary. Include key points and data provided in message.\n\n3. Determine the priority level:\n   - \"High\" – Urgent support requests, time-sensitive matters.\n   - \"Medium\" – Important but not urgent issues.\n   - \"Low\" – Marketing or general informational emails.\n\n \n\n \n"
+            }
+          ]
+        }
+      },
+      "id": "82caa5f6-0a28-4c1a-b006-614ea06d14d4",
+      "name": "Assess message",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        -496,
+        3056
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        3040
+      ],
+      "id": "b9fc5b48-4208-4714-af2b-b1501b80848f",
+      "name": "AI Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "iv1r5q9QqvTklRpc",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"needsReply\": {\n      \"type\": \"boolean\",\n      \"description\": \"True if a reply is needed; typically true for support emails, false for marketing.\"\n    },\n    \"originalEmailType\": {\n      \"type\": \"string\",\n      \"enum\": [\"Support\", \"Marketing\", \"Other\"],\n      \"description\": \"The classification of the original email.\"\n    },\n    \"supportType\": {\n      \"type\": \"string\",\n      \"enum\": [\"Billing\", \"Order\", \"Tax\", \"Technical\", \"Account\", \"Other\"],\n      \"description\": \"The subtype of support issue. Only applicable when originalEmailType is 'Support'.\"\n    },\n    \"priority\": {\n      \"type\": \"string\",\n      \"enum\": [\"High\", \"Medium\", \"Low\"],\n      \"description\": \"Priority level of the email based on its content.\"\n    },\n    \"summary\": {\n      \"type\": \"string\",\n      \"description\": \"A short summary of the original email.\"\n    },\n    \"userEmail\": {\n      \"type\": \"string\",\n      \"format\": \"email\",\n      \"description\": \"The sender's email address.\"\n    }\n  },\n  \"required\": [\"replyEmail\", \"needsReply\", \"originalEmailType\", \"priority\", \"summary\", \"userEmail\"]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -304,
+        3264
+      ],
+      "id": "e698b835-0b45-4efb-a53d-6698146f59d7",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"slackMessage\": {\n      \"type\": \"string\",\n      \"description\": \"The message that will be sent to Slack to notify about the ticket. It should include customer email, priority, ticket type, and assignee.\"\n    }\n  },\n  \"required\": [\"slackMessage\"]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        784,
+        3504
+      ],
+      "id": "89aca021-ea9e-471e-8439-3779d490bde3",
+      "name": "Structured Output Parser2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Fallback Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Assess message",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "OpenAI Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Assess message",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Reply Message": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Write Reply Message",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira MCP": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Unread messages": {
+      "main": [
+        [
+          {
+            "node": "Assess message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check": {
+      "main": [
+        [
+          {
+            "node": "Write Reply Message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "AI Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assess message": {
+      "main": [
+        [
+          {
+            "node": "Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Write Reply Message",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Assess message",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7f22b883-0721-44cd-98e1-4fe0076683bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "55b0a2598ab91ea335ba93632bbf369c5d1ac96063ea53c9c3141ed4138f77b5"
+  },
+  "id": "RpFheQfmEnVKVeKH",
+  "tags": []
+}
