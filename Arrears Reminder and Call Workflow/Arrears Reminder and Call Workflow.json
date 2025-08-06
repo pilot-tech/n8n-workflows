@@ -1,0 +1,712 @@
+{
+  "name": "Arrears Reminder and Call Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f8fe9931-fd4c-44ea-960a-9947032fdd30",
+              "leftValue": {},
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "c2645b20-9f27-4225-a2c7-2a9c5e6ac261",
+              "leftValue": "",
+              "rightValue": "2",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -592,
+        784
+      ],
+      "id": "0091cb67-7dcb-4d2c-9574-80b9c4cd45bf",
+      "name": "Reminder before due"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f8fe9931-fd4c-44ea-960a-9947032fdd30",
+              "leftValue": {},
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -368,
+        880
+      ],
+      "id": "874fdada-76ff-45cc-99e1-014dba8b14d5",
+      "name": "Reminder on due date"
+    },
+    {
+      "parameters": {
+        "sendTo": "abhishek@pilot-tech.co",
+        "subject": "Notification",
+        "message": "Message content",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        592
+      ],
+      "id": "f332a736-7a8d-4903-97a8-2c7f290f6a12",
+      "name": "Send a message1",
+      "webhookId": "d9c56849-99ff-4328-b466-3baafa72f624",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IWAlvl8WYuPce31f",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "curlImport": "",
+        "httpVariantWarning": "",
+        "method": "POST",
+        "url": "https://api.vapi.ai/call",
+        "": "",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "convertApi",
+        "provideSslCertificates": false,
+        "sendQuery": false,
+        "sendHeaders": false,
+        "sendBody": false,
+        "options": {},
+        "infoMessage": ""
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        976
+      ],
+      "id": "533264d3-4bb5-4707-9e19-0daed8084b9b",
+      "name": "Place a call on Vapi",
+      "extendsCredential": "convertApi",
+      "credentials": {
+        "convertApi": {
+          "id": "5J00aTGNaw08NJVo",
+          "name": "ConvertAPI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -608,
+        1456
+      ],
+      "id": "9c4ed4e0-5c3d-4b27-abb6-20ec0dab7bbb",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -608,
+        1680
+      ],
+      "id": "c43008dd-906b-4417-8705-566b9a1fb8ed",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "iv1r5q9QqvTklRpc",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1fsLyjnx86j7_kyMUjlj7ZRfMmqmVnV93p07gJ_GKaZE",
+          "mode": "list",
+          "cachedResultName": "PT-Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fsLyjnx86j7_kyMUjlj7ZRfMmqmVnV93p07gJ_GKaZE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fsLyjnx86j7_kyMUjlj7ZRfMmqmVnV93p07gJ_GKaZE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -208,
+        1552
+      ],
+      "id": "824b1bdf-c466-4745-9d8e-c16d803402b9",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kXjFQHGUxiu9D7VB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f8fe9931-fd4c-44ea-960a-9947032fdd30",
+              "leftValue": {},
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "c2645b20-9f27-4225-a2c7-2a9c5e6ac261",
+              "leftValue": "",
+              "rightValue": "2",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -208,
+        1360
+      ],
+      "id": "7505e704-5aaf-42dd-9935-75d3f66e57b0",
+      "name": "Payment Link Request Check"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "5a60dbd3-4759-44c6-9265-e08284622194",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        1456
+      ],
+      "id": "ba5ee534-c09a-428e-8015-efa2c20a1d35",
+      "name": "VAPI Post Call Webhook",
+      "webhookId": "5a60dbd3-4759-44c6-9265-e08284622194",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "lmQrhKwZRioaexow",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "5a60dbd3-4759-44c6-9265-e08284622194",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        784
+      ],
+      "id": "3f160c2e-29c2-4164-a910-447653d5bf38",
+      "name": "Webhook From Server",
+      "webhookId": "5a60dbd3-4759-44c6-9265-e08284622194",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "lmQrhKwZRioaexow",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "abhishek@pilot-tech.co",
+        "subject": "Notification",
+        "message": "Message content",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        80,
+        784
+      ],
+      "id": "99f69e2b-1f32-40f2-a44c-8acdc87c722a",
+      "name": "Send a message",
+      "webhookId": "d9c56849-99ff-4328-b466-3baafa72f624",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IWAlvl8WYuPce31f",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "abhishek@pilot-tech.co",
+        "subject": "Notification",
+        "message": "Message content",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        1360
+      ],
+      "id": "c623f55d-b3d5-44ff-8ddc-347da9217507",
+      "name": "Send a message2",
+      "webhookId": "d9c56849-99ff-4328-b466-3baafa72f624",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IWAlvl8WYuPce31f",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b217e688-4901-4203-90a8-b955edca4537",
+              "name": "email_content",
+              "value": "This is your email",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -368,
+        592
+      ],
+      "id": "4b7a128c-0422-4640-84e3-04347ba96201",
+      "name": "Set Email Message Content"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b217e688-4901-4203-90a8-b955edca4537",
+              "name": "email_content",
+              "value": "This is your email",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        784
+      ],
+      "id": "88a8fee1-8a7e-4549-8e36-db7b09eb7c49",
+      "name": "Set Email Message Content 1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b217e688-4901-4203-90a8-b955edca4537",
+              "name": "email_content",
+              "value": "This is your email",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        1360
+      ],
+      "id": "3f54db58-46bd-4a3a-bd79-e2693863f3a0",
+      "name": "Set Email Message Content 2"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1fsLyjnx86j7_kyMUjlj7ZRfMmqmVnV93p07gJ_GKaZE",
+          "mode": "list",
+          "cachedResultName": "PT-Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fsLyjnx86j7_kyMUjlj7ZRfMmqmVnV93p07gJ_GKaZE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fsLyjnx86j7_kyMUjlj7ZRfMmqmVnV93p07gJ_GKaZE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        464,
+        1360
+      ],
+      "id": "99c0227c-355b-4ba1-ace8-890ec3407d80",
+      "name": "Update column and set payment link set to true",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kXjFQHGUxiu9D7VB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f8fe9931-fd4c-44ea-960a-9947032fdd30",
+              "leftValue": null,
+              "rightValue": -1,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -144,
+        976
+      ],
+      "id": "2dcc5e76-8774-439a-bd4e-2e8015ac8eaa",
+      "name": "Due date crossed and call has not placed"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -416,
+        1680
+      ],
+      "id": "3fdc2d50-44a7-4639-8dee-10d48e4d513c",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "content": " Payment Reminder and Call Trigger Flow\n",
+        "height": 736,
+        "width": 1904
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1120,
+        496
+      ],
+      "typeVersion": 1,
+      "id": "ad4a89ae-f6f6-4cf6-b8c6-fe52bb51c435",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Post-Call Analysis and Follow-Up",
+        "height": 640,
+        "width": 1744
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -976,
+        1264
+      ],
+      "typeVersion": 1,
+      "id": "953e5975-a6fc-4439-9d34-e61268da38a7",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Reminder before due": {
+      "main": [
+        [
+          {
+            "node": "Set Email Message Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reminder on due date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reminder on due date": {
+      "main": [
+        [
+          {
+            "node": "Set Email Message Content 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Due date crossed and call has not placed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Payment Link Request Check",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payment Link Request Check": {
+      "main": [
+        [
+          {
+            "node": "Set Email Message Content 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VAPI Post Call Webhook": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook From Server": {
+      "main": [
+        [
+          {
+            "node": "Reminder before due",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Email Message Content": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Email Message Content 1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Email Message Content 2": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message2": {
+      "main": [
+        [
+          {
+            "node": "Update column and set payment link set to true",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Due date crossed and call has not placed": {
+      "main": [
+        [
+          {
+            "node": "Place a call on Vapi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d9ca0495-b127-4082-b5bc-8419b79a2dad",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "55b0a2598ab91ea335ba93632bbf369c5d1ac96063ea53c9c3141ed4138f77b5"
+  },
+  "id": "bbC4TEy46QZAJIpW",
+  "tags": []
+}
