@@ -1,0 +1,574 @@
+{
+  "name": "Email Categorisation",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "Label_8285759022012730295"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -304,
+        -72
+      ],
+      "id": "6ae97047-faf2-43ed-a6ed-8b3180fa3d2d",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IWAlvl8WYuPce31f",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Subject:  {{ $json.subject }}\nCustomer Email:  {{ $('Gmail Trigger').item.json.from.value[0].address }}\nMessage: {{ $json.html }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an AI email categorization assistant.\n\nAnalyze the following email and do the following:\n\n1. Categorize it into one of these categories:\n   \"marketing\", \"billing\", \"support\", \"internal\", \"sales\", or \"other\"\n\n2. Summarize the email content in 1–2 concise sentences\n\n3. Extract the sender's name (if available) and email address\n\nEmail Subject: {{ $json[\"subject\"] }}\nEmail From: {{ $json[\"from\"] }}\nEmail Content: {{ $json[\"snippet\"] }}\n\nRules for Categorization:\n- \"marketing\": Promotional emails, newsletters, advertisements\n- \"billing\": Invoices, payment requests, billing inquiries\n- \"support\": Technical support requests, help desk tickets, bug reports\n- \"internal\": Emails from company domain or internal communications\n- \"sales\": Sales inquiries, product questions, quote requests\n- \"other\": Everything else that doesn't fit above categories"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        144,
+        -72
+      ],
+      "id": "c820d724-a917-46dc-9166-8d1ecd000ae6",
+      "name": "Basic LLM Chain",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        144,
+        160
+      ],
+      "id": "8ef964f1-a762-4a7f-873e-0360c45389eb",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "iv1r5q9QqvTklRpc",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"category\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"marketing\",\n        \"billing\",\n        \"support\",\n        \"internal\",\n        \"sales\",\n        \"other\"\n      ],\n      \"description\": \"Email category based on content analysis\"\n    },\n    \"summary\": {\n      \"type\": \"string\",\n      \"description\": \"A brief summary of the email content\"\n    }\n    \n  },\n  \"required\": [\"category\", \"summary\"]\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        336,
+        144
+      ],
+      "id": "9317c69f-4fe3-4927-ba7c-4c966169a4b4",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "addLabels",
+        "threadId": "={{ $json.threadId }}",
+        "labelIds": "={{ $json.labelId }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1216,
+        -72
+      ],
+      "id": "f4f5de8d-3b98-4680-961e-88e7694bef52",
+      "name": "Add label to thread",
+      "webhookId": "ea742ca8-49a5-41d2-86c9-2bf54f33b985",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IWAlvl8WYuPce31f",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let labelId = \"none\";\nlet labelName = $('Basic LLM Chain').first().json.output.category\nlet threadId = $('Edit Fields').first().json.threadId\n\nfor (const item of $input.all()) {\n  const label = item.json;\n\n  if (label.name.toLowerCase() === $('Basic LLM Chain').first().json.output.category) {\n    labelId = label.id;\n    break; // optional: stop if found\n  }\n}\n\nreturn [\n  {\n    json: {\n      labelId,\n      labelName,\n      threadId\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        -168
+      ],
+      "id": "57054d7f-fc0f-4993-a7f8-2cb174f56428",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "resource": "label"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        544,
+        -168
+      ],
+      "id": "4512ed8d-b8a6-40f2-9aef-cc41a8381cd3",
+      "name": "Get many labels",
+      "webhookId": "4290bf62-c926-435e-aa22-27e86895bdf1",
+      "alwaysOutputData": true,
+      "retryOnFail": false,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IWAlvl8WYuPce31f",
+          "name": "Gmail account 2"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "label",
+        "operation": "create",
+        "name": "=new test",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1216,
+        -264
+      ],
+      "id": "37d4f92c-9de2-4adc-8bf5-b4f2a2a21034",
+      "name": "Create a label",
+      "webhookId": "d87b28ba-7330-456f-904a-314fd1317e25",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IWAlvl8WYuPce31f",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "addLabels",
+        "threadId": "={{ $('Gmail Trigger').item.json.threadId }}",
+        "labelIds": "="
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1440,
+        -264
+      ],
+      "id": "5914ad1e-aad2-4dea-8f07-99edde0ee81f",
+      "name": "Add label to thread1",
+      "webhookId": "ea742ca8-49a5-41d2-86c9-2bf54f33b985",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IWAlvl8WYuPce31f",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a53faa0a-f1d5-41c3-a397-e76ec86cc2ac",
+              "name": "threadId",
+              "value": "={{ $json.threadId }}",
+              "type": "string"
+            },
+            {
+              "id": "ea25bb6e-3754-403a-94b5-cf62bbdee922",
+              "name": "messageId",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "0ad98ee0-eb3e-430b-8267-eca7dcc73b19",
+              "name": "html",
+              "value": "={{$json.html}}",
+              "type": "string"
+            },
+            {
+              "id": "31323324-a40d-4180-a6a3-f106316f06c9",
+              "name": "subject",
+              "value": "={{ $json.subject }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -80,
+        -72
+      ],
+      "id": "6bf268c3-c159-449a-887a-8d43c81c6f2f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "02b92819-6acf-47a4-9257-4bd3e8a8455f",
+              "leftValue": "={{ $json.labelId }}",
+              "rightValue": "none",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        -264
+      ],
+      "id": "50293e26-ffaa-49ed-9728-fbb3fb08aaf0",
+      "name": "If label does not exists"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0cd686ad-2edb-4daf-b35d-63a44dcfb951",
+              "leftValue": "",
+              "rightValue": "none",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        -72
+      ],
+      "id": "8e164903-32f3-4911-9041-114216abe83b",
+      "name": "If label exists"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 736,
+        "width": 2352
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -560,
+        -384
+      ],
+      "typeVersion": 1,
+      "id": "54b32c3d-1282-4289-a3de-88e1bf2a2a24",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U098JK3C86T",
+          "mode": "list",
+          "cachedResultName": "yk.abhee"
+        },
+        "text": "=Email Alert\n\nFrom: {{ $('Gmail Trigger').item.json.from.value[0].address }}\nSubject:  {{ $('Gmail Trigger').item.json.subject }}\nCategory: {{ $('Basic LLM Chain').item.json.output.category }}\n\nSummary: {{ $('Basic LLM Chain').item.json.output.summary }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        768,
+        24
+      ],
+      "id": "3a2e867e-af3e-4f0a-aaaa-a0871db43715",
+      "name": "Send a message",
+      "webhookId": "48e9f9a0-4cc5-4552-9ac6-c978ff2c5c0d",
+      "credentials": {
+        "slackApi": {
+          "id": "Z4aRNKMgZHOCuTQE",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "25748ede-839b-4621-88d8-f43d23a7c9ff",
+              "leftValue": "={{ $json.output.category }}",
+              "rightValue": "support",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "754f2e62-4f51-4447-ad25-3f960b614369",
+              "leftValue": "={{ $json.output.category }}",
+              "rightValue": "billing",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "8ff0d93b-aa35-470c-afd6-6a3639905de1",
+              "leftValue": "={{ $json.output.category }}",
+              "rightValue": "internal",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "523b0524-3361-4bab-82e6-a39a6d10bbdb",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        544,
+        24
+      ],
+      "id": "6a1f9da6-3394-4aeb-98f7-3b4e4dbc6b4a",
+      "name": "If email falls under these categories"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Get many labels",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If email falls under these categories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add label to thread": {
+      "main": [
+        []
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If label exists",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If label does not exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many labels": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a label": {
+      "main": [
+        [
+          {
+            "node": "Add label to thread1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If label does not exists": {
+      "main": [
+        [
+          {
+            "node": "Create a label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If label exists": {
+      "main": [
+        [
+          {
+            "node": "Add label to thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add label to thread1": {
+      "main": [
+        []
+      ]
+    },
+    "If email falls under these categories": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ea3d3083-5023-4d7b-9654-446ef3fda641",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "55b0a2598ab91ea335ba93632bbf369c5d1ac96063ea53c9c3141ed4138f77b5"
+  },
+  "id": "G6yoDs8mcJbENykJ",
+  "tags": []
+}
