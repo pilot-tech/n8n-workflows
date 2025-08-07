@@ -9,8 +9,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        112,
-        -416
+        -16,
+        -408
       ],
       "id": "95403fe6-5687-4449-9fb9-30e075f5df85",
       "name": "Webhook",
@@ -19,13 +19,15 @@
     {
       "parameters": {
         "hasOutputParser": true,
-        "options": {}
+        "options": {
+          "systemMessage": "You are a professional lead qualification specialist for Trippl, a leading AI automation company. Your role is to analyze incoming lead information and provide comprehensive qualification insights.\n\nCONTEXT:\nYou have access to HubSpot CRM data through an MCP server connection. Use this to:\n1. Check if the lead already exists in our database\n2. Retrieve company information and previous interactions\n3. Assess lead quality based on our ideal customer profile\n\nLEAD QUALIFICATION CRITERIA:\n- Company Size: 50+ employees (preferred)\n- Budget: $5,000+ monthly\n- Decision-Making Authority: Manager level or above\n- Timeline: Within 6 months\n- Industry Fit: Technology, SaaS, E-commerce, Professional Services\n\nTASKS:\n1. Search HubSpot for existing contact by email\n2. If found, retrieve contact history and previous interactions\n3. Research company information (size, industry, revenue)\n4. Calculate lead score (0-100) based on qualification criteria\n5. Determine if lead qualifies for immediate outreach (score ≥ 70)\n6. Identify key talking points for personalized outreach\n7. Flag any potential concerns or objections\n\nRemember to be thorough but concise. Focus on actionable insights that will help our sales team have more meaningful conversations."
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.1,
       "position": [
-        368,
-        -416
+        240,
+        -512
       ],
       "id": "218cf526-4fa7-4460-b91f-e654f0774c79",
       "name": "AI Agent"
@@ -38,8 +40,8 @@
       "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
       "typeVersion": 1.1,
       "position": [
-        464,
-        -192
+        336,
+        -288
       ],
       "id": "17f61f7d-fe47-4bfd-a41c-0758b2dd4844",
       "name": "MCP Client"
@@ -56,8 +58,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        336,
-        -192
+        208,
+        -288
       ],
       "id": "07052edc-4bb2-4c15-b7ac-d129f8ba5927",
       "name": "OpenAI Chat Model",
@@ -80,15 +82,18 @@
         "provideSslCertificates": false,
         "sendQuery": false,
         "sendHeaders": false,
-        "sendBody": false,
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "{\n\"assistant\": \"c64f0b22-38ef-45b9-80c9-b600982e1920\",\n  \"customer\": {\n    \"phone\": \"{{$('AI Agent').contactNumber}}\"\n  }\n}",
         "options": {},
         "infoMessage": ""
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1024,
-        -512
+        896,
+        -504
       ],
       "id": "a50363b6-f284-4611-aca1-e9912def613c",
       "name": "ConvertAPI HTTP Request",
@@ -101,12 +106,15 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"existingContact\": {\n      \"type\": \"boolean\"\n    },\n    \"hubspotContactId\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"contactEmail\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"contactNumber\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"leadScore\": {\n      \"type\": \"number\"\n    },\n    \"qualificationStatus\": {\n      \"type\": \"string\",\n      \"enum\": [\"qualified\", \"nurture\", \"disqualified\"]\n    },\n    \"companyInsights\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"size\": {\n          \"type\": \"string\"\n        },\n        \"industry\": {\n          \"type\": \"string\"\n        },\n        \"estimatedRevenue\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\"size\", \"industry\", \"estimatedRevenue\"]\n    },\n    \"recommendedAction\": {\n      \"type\": \"string\",\n      \"enum\": [\"immediate_call\", \"schedule_call\", \"send_nurture\", \"disqualify\"]\n    },\n    \"talkingPoints\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"potentialObjections\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"notes\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"existingContact\",\n    \"hubspotContactId\",\n    \"leadScore\",\n    \"qualificationStatus\",\n    \"companyInsights\",\n    \"recommendedAction\",\n    \"talkingPoints\",\n    \"potentialObjections\",\n    \"notes\"\n  ]\n}\n"
+      },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        592,
-        -192
+        464,
+        -288
       ],
       "id": "592536f9-74df-4242-b8b8-a5b18ddc7348",
       "name": "Structured Output Parser"
@@ -123,12 +131,11 @@
           "conditions": [
             {
               "id": "b59b8f1b-ca07-45ae-b545-071d38e1493c",
-              "leftValue": "",
-              "rightValue": "",
+              "leftValue": "={{ $json.leadScore }}",
+              "rightValue": 70,
               "operator": {
-                "type": "string",
-                "operation": "equals",
-                "name": "filter.operator.equals"
+                "type": "number",
+                "operation": "gte"
               }
             }
           ],
@@ -139,8 +146,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        800,
-        -512
+        672,
+        -504
       ],
       "id": "44113d16-0a34-4f87-8887-f78fad145c20",
       "name": "If need to place outreach call"
@@ -154,7 +161,7 @@
       "typeVersion": 2,
       "position": [
         -16,
-        484
+        68
       ],
       "id": "488ef923-6879-4919-b56e-d8c9b53f79f0",
       "name": "Webhook1",
@@ -162,15 +169,18 @@
     },
     {
       "parameters": {
-        "email": "={{ $json.hubspotContactEmail }}",
-        "additionalFields": {},
+        "email": "={{ $json.contactEmail }}",
+        "additionalFields": {
+          "firstName": "{{ $('Webhook').firstName }}",
+          "lastName": "={{ $('Webhook').lastName }}"
+        },
         "options": {}
       },
       "type": "n8n-nodes-base.hubspot",
       "typeVersion": 2.1,
       "position": [
-        800,
-        -320
+        672,
+        -312
       ],
       "id": "980eec9b-cff1-461f-98b5-2549212a46de",
       "name": "Create or update a contact",
@@ -184,13 +194,20 @@
     {
       "parameters": {
         "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an expert sales conversation analyst. Analyze the following call transcript and extract key insights about the prospect's interest level, needs, and next steps.\n\nANALYSIS TASKS:\n1. Determine overall interest level (high/medium/low/not-interested)\n2. Extract specific pain points mentioned\n3. Identify budget range if discussed\n4. Note timeline preferences\n5. Determine decision-making process\n6. Extract any technical requirements\n7. Identify potential objections or concerns\n8. Recommend next best action\n\nPROSPECT QUALIFICATION:\n- High Interest: Ready for demo, has budget/authority/need/timeline\n- Medium Interest: Interested but missing 1-2 BANT criteria\n- Low Interest: Curious but no immediate need/budget\n- Not Interested: Not a fit or not ready\n"
+            }
+          ]
+        },
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
         208,
-        484
+        68
       ],
       "id": "6bdad260-3866-48f3-baf2-57918c3fa26a",
       "name": "Basic LLM Chain"
@@ -208,7 +225,7 @@
       "typeVersion": 1.2,
       "position": [
         208,
-        704
+        304
       ],
       "id": "74aa3b15-5d98-4368-b8f2-37fd5a8a5354",
       "name": "OpenAI Chat Model1",
@@ -220,12 +237,15 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"interestLevel\": {\n      \"type\": \"string\",\n      \"enum\": [\"high\", \"medium\", \"low\", \"not-interested\"]\n    },\n    \"painPoints\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"budgetRange\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"timeline\": {\n      \"type\": \"string\"\n    },\n    \"decisionMakers\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"technicalRequirements\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"concerns\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"nextAction\": {\n      \"type\": \"string\",\n      \"enum\": [\"schedule_demo\", \"send_proposal\", \"nurture\", \"disqualify\"]\n    },\n    \"callSummary\": {\n      \"type\": \"string\"\n    },\n    \"followUpNotes\": {\n      \"type\": \"string\"\n    },\n    \"confidence\": {\n      \"type\": \"number\",\n      \"minimum\": 0,\n      \"maximum\": 100\n    }\n  },\n  \"required\": [\n    \"interestLevel\",\n    \"painPoints\",\n    \"budgetRange\",\n    \"timeline\",\n    \"decisionMakers\",\n    \"technicalRequirements\",\n    \"concerns\",\n    \"nextAction\",\n    \"callSummary\",\n    \"followUpNotes\",\n    \"confidence\"\n  ]\n}\n"
+      },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
         400,
-        704
+        288
       ],
       "id": "080ef0dd-0d9e-4ccf-9fa4-a0899d68c892",
       "name": "Structured Output Parser1"
@@ -240,7 +260,7 @@
       "typeVersion": 2.1,
       "position": [
         952,
-        632
+        -80
       ],
       "id": "868eedb0-e8d7-44af-8716-f3da1a1b7f77",
       "name": "Create or update a contact1",
@@ -254,13 +274,15 @@
     {
       "parameters": {
         "hasOutputParser": true,
-        "options": {}
+        "options": {
+          "systemMessage": "You are a scheduling assistant for Trippl's sales team. Based on the call analysis, schedule an appropriate follow-up meeting for this qualified prospect.\n\nSCHEDULING GUIDELINES:\n- High interest: 60-minute product demo\n- Medium interest: 30-minute discovery call\n- Include relevant team members based on technical requirements\n- Suggest times within prospect's preferred timeline\n- Send calendar invitation with agenda\n\nMEETING TYPES:\n1. Product Demo (60 min): Full platform demonstration\n2. Discovery Call (30 min): Needs assessment and solution fit\n3. Technical Deep Dive (45 min): Architecture and integration discussion\n\nTASKS:\n1. Determine appropriate meeting type and duration\n2. Identify required Trippl team members\n3. Create meeting agenda based on discussed pain points\n4. Find available time slots in next 1-2 weeks\n5. Prepare personalized calendar invitation\n\nUse the MCP server to:\n- Check team member availability\n- Create calendar event in HubSpot\n- Send confirmation email with meeting details\n\nRespond with meeting confirmation details and next steps."
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.1,
       "position": [
-        960,
-        208
+        864,
+        224
       ],
       "id": "a574f286-fdf3-4a2b-9576-12e0fff80035",
       "name": "AI Agent1"
@@ -272,8 +294,8 @@
       "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
       "typeVersion": 1.1,
       "position": [
-        1024,
-        464
+        960,
+        440
       ],
       "id": "a1f3ef78-ef64-40b6-9066-8c1ffe84a42a",
       "name": "MCP Client1"
@@ -290,8 +312,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        864,
-        464
+        832,
+        440
       ],
       "id": "17049a8f-d066-4e50-a1f4-05e9a60b468e",
       "name": "OpenAI Chat Model2",
@@ -303,12 +325,15 @@
       }
     },
     {
-      "parameters": {},
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"hubspotContactEmail\": {\n\t\t\t\"type\": \"string\"\n        }\n\t}\n}"
+      },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        1152,
-        448
+        1088,
+        440
       ],
       "id": "39799d2b-0925-4ec0-9796-a9cadfd15e90",
       "name": "Structured Output Parser2"
@@ -322,8 +347,8 @@
       "type": "n8n-nodes-base.hubspot",
       "typeVersion": 2.1,
       "position": [
-        1520,
-        336
+        1296,
+        216
       ],
       "id": "56809bda-b9e3-4753-8ed0-aabb94609116",
       "name": "Create or update a contact2",
@@ -336,48 +361,14 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "b59b8f1b-ca07-45ae-b545-071d38e1493c",
-              "leftValue": "",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "equals",
-                "name": "filter.operator.equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        608,
-        484
-      ],
-      "id": "b257df88-7dcb-4929-a42b-7e59a18b0dad",
-      "name": "If need to place outreach call1"
-    },
-    {
-      "parameters": {
         "content": "Lead Capture and Initial Qualification",
         "height": 560,
         "width": 1376
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        0,
-        -560
+        -200,
+        -704
       ],
       "typeVersion": 1,
       "id": "d0a33890-1dde-4e5f-9c56-1e5ca54789e1",
@@ -391,12 +382,45 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        -144,
-        176
+        -272,
+        -112
       ],
       "typeVersion": 1,
       "id": "7fc68f5d-0820-4c45-b861-3c51f101c8a1",
       "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b59b8f1b-ca07-45ae-b545-071d38e1493c",
+              "leftValue": "{{$('Basic LLM Chain').interestLevel}}",
+              "rightValue": "not-interested",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        68
+      ],
+      "id": "b257df88-7dcb-4929-a42b-7e59a18b0dad",
+      "name": "Interest Check"
     }
   ],
   "pinData": {},
@@ -509,7 +533,7 @@
       "main": [
         [
           {
-            "node": "If need to place outreach call1",
+            "node": "Interest Check",
             "type": "main",
             "index": 0
           }
@@ -560,18 +584,18 @@
         ]
       ]
     },
-    "If need to place outreach call1": {
+    "Interest Check": {
       "main": [
         [
           {
-            "node": "AI Agent1",
+            "node": "Create or update a contact1",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Create or update a contact1",
+            "node": "AI Agent1",
             "type": "main",
             "index": 0
           }
@@ -583,7 +607,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "9048679c-90b7-4b1a-b426-aa0a2a47d03f",
+  "versionId": "482a9ce7-0217-4075-b65c-5128e09037c0",
   "meta": {
     "instanceId": "55b0a2598ab91ea335ba93632bbf369c5d1ac96063ea53c9c3141ed4138f77b5"
   },
