@@ -13,7 +13,7 @@
           "conditions": [
             {
               "id": "f8fe9931-fd4c-44ea-960a-9947032fdd30",
-              "leftValue": {},
+              "leftValue": "={{ $json.dueDays }}",
               "rightValue": 5,
               "operator": {
                 "type": "number",
@@ -22,7 +22,7 @@
             },
             {
               "id": "c2645b20-9f27-4225-a2c7-2a9c5e6ac261",
-              "leftValue": "",
+              "leftValue": "={{ $json.dueDays }}",
               "rightValue": "2",
               "operator": {
                 "type": "string",
@@ -56,7 +56,7 @@
           "conditions": [
             {
               "id": "f8fe9931-fd4c-44ea-960a-9947032fdd30",
-              "leftValue": {},
+              "leftValue": "={{ $json.dueDays }}",
               "rightValue": 0,
               "operator": {
                 "type": "number",
@@ -80,8 +80,8 @@
     {
       "parameters": {
         "sendTo": "abhishek@pilot-tech.co",
-        "subject": "Notification",
-        "message": "Message content",
+        "subject": "Friendly Reminder: Payment Due Soon - Invoice {{$json.invoice_number}}",
+        "message": "={{ $json.email_content }}",
         "options": {}
       },
       "type": "n8n-nodes-base.gmail",
@@ -112,7 +112,10 @@
         "provideSslCertificates": false,
         "sendQuery": false,
         "sendHeaders": false,
-        "sendBody": false,
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"customer\": {\n\"number\": \"{{$('Webhook From Server').number}}\" },\n\"assistant\":\"c64f0b22-38ef-45b9-80c9-b600982e1920\"\n}",
         "options": {},
         "infoMessage": ""
       },
@@ -135,6 +138,13 @@
     {
       "parameters": {
         "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Analyze the following customer service call transcript for a payment collection call. Extract the following information:\n\n1. Customer Intent (select one):\n   - payment_promised: Customer promised to pay by specific date\n   - payment_link_requested: Customer asked for payment link/instructions\n   - dispute_raised: Customer disputes the charge\n   - callback_requested: Customer requested callback at different time\n   - payment_made: Customer claims payment already made\n   - financial_hardship: Customer expressed financial difficulties\n   - no_response: No clear intent expressed\n\n2. Promised Payment Date (if applicable): Extract any specific date mentioned\n3. Customer Sentiment: positive, neutral, negative\n4. Key Concerns: List any specific issues raised\n5. Follow-up Required: yes/no\n6. Urgency Level: low, medium, high"
+            }
+          ]
+        },
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
@@ -224,21 +234,11 @@
           "conditions": [
             {
               "id": "f8fe9931-fd4c-44ea-960a-9947032fdd30",
-              "leftValue": {},
-              "rightValue": 5,
-              "operator": {
-                "type": "number",
-                "operation": "equals"
-              }
-            },
-            {
-              "id": "c2645b20-9f27-4225-a2c7-2a9c5e6ac261",
-              "leftValue": "",
-              "rightValue": "2",
+              "leftValue": "={{ $json.customerIntent }}",
+              "rightValue": "payment_link_requested",
               "operator": {
                 "type": "string",
-                "operation": "equals",
-                "name": "filter.operator.equals"
+                "operation": "equals"
               }
             }
           ],
@@ -304,8 +304,8 @@
     {
       "parameters": {
         "sendTo": "abhishek@pilot-tech.co",
-        "subject": "Notification",
-        "message": "Message content",
+        "subject": "=Action Required: Invoice {{$json.invoice_number}} Due Today",
+        "message": "={{$json.email_content}}",
         "options": {}
       },
       "type": "n8n-nodes-base.gmail",
@@ -328,7 +328,7 @@
       "parameters": {
         "sendTo": "abhishek@pilot-tech.co",
         "subject": "Notification",
-        "message": "Message content",
+        "message": "={{ $json.email_content }}",
         "options": {}
       },
       "type": "n8n-nodes-base.gmail",
@@ -340,6 +340,7 @@
       "id": "c623f55d-b3d5-44ff-8ddc-347da9217507",
       "name": "Send a message2",
       "webhookId": "d9c56849-99ff-4328-b466-3baafa72f624",
+      "alwaysOutputData": false,
       "credentials": {
         "gmailOAuth2": {
           "id": "IWAlvl8WYuPce31f",
@@ -354,7 +355,7 @@
             {
               "id": "b217e688-4901-4203-90a8-b955edca4537",
               "name": "email_content",
-              "value": "This is your email",
+              "value": "Dear {{$json.customer_name}},|This is a friendly reminder that your payment of ${{$json.amount}} for invoice {{$json.invoice_number}} is due on {{$json.due_date}}.To avoid any late fees or service interruptions, please process your payment at your earliest convenience.Payment Options:- Online: [Payment Portal Link]- Phone: [Phone Number]- Mail: [Mailing Address] Thank you for your prompt attention to this matter.Best regards,",
               "type": "string"
             }
           ]
@@ -377,7 +378,7 @@
             {
               "id": "b217e688-4901-4203-90a8-b955edca4537",
               "name": "email_content",
-              "value": "This is your email",
+              "value": "=Dear {{$json.customer_name}},\n\nThis is a reminder that your payment of ${{$json.amount}} for invoice {{$json.invoice_number}} is due today ({{$json.due_date}}).\n\nIf payment is not received by today, a late fee of $2 per day will be applied to the outstanding balance starting tomorrow ({{$json.late_fee_start_date}}).\n\nPlease make your payment immediately to avoid additional charges.\n\nPayment Options:\n\nOnline: [Payment Portal Link]\n\nPhone: [Phone Number]\n\nMail: [Mailing Address]\n\nIf you’ve already made this payment, please disregard this message. Otherwise, we appreciate your immediate attention to settle this invoice.\n\nThank you,\n",
               "type": "string"
             }
           ]
@@ -456,7 +457,8 @@
           "id": "kXjFQHGUxiu9D7VB",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -470,11 +472,11 @@
           "conditions": [
             {
               "id": "f8fe9931-fd4c-44ea-960a-9947032fdd30",
-              "leftValue": null,
-              "rightValue": -1,
+              "leftValue": "={{ $json.dueDays }}",
+              "rightValue": 0,
               "operator": {
                 "type": "number",
-                "operation": "equals"
+                "operation": "lt"
               }
             }
           ],
@@ -492,7 +494,10 @@
       "name": "Due date crossed and call has not placed"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"customerIntent\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"payment_promised\",\n        \"payment_link_requested\",\n        \"dispute_raised\",\n        \"callback_requested\",\n        \"payment_made\",\n        \"financial_hardship\",\n        \"no_response\"\n      ]\n    },\n    \"promisedPaymentDate\": {\n      \"type\": [\"string\", \"null\"],\n      \"description\": \"Specific date mentioned for payment, if any (ISO format preferred)\"\n    },\n    \"customerSentiment\": {\n      \"type\": \"string\",\n      \"enum\": [\"positive\", \"neutral\", \"negative\"]\n    },\n    \"keyConcerns\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"List of concerns raised by the customer\"\n    },\n    \"followUpRequired\": {\n      \"type\": \"boolean\"\n    },\n    \"urgencyLevel\": {\n      \"type\": \"string\",\n      \"enum\": [\"low\", \"medium\", \"high\"]\n    }\n  },\n  \"required\": [\n    \"customerIntent\",\n    \"promisedPaymentDate\",\n    \"customerSentiment\",\n    \"keyConcerns\",\n    \"followUpRequired\",\n    \"urgencyLevel\"\n  ]\n}\n"
+      },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
@@ -702,7 +707,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "d9ca0495-b127-4082-b5bc-8419b79a2dad",
+  "versionId": "8c36804e-1d1e-4efb-9f29-9d4198ebb32d",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "55b0a2598ab91ea335ba93632bbf369c5d1ac96063ea53c9c3141ed4138f77b5"
